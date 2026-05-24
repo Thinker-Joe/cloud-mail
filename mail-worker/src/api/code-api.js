@@ -19,26 +19,14 @@ app.get('/code', async (c) => {
 			.slice(0, 19);
 
 		let emailRow = await orm(c).select().from(email)
-			.where(eq(email.toEmail, emailAddr))
+			.where(or(
+				eq(email.toEmail, emailAddr),
+				like(email.recipient, `%${emailAddr}%`),
+				eq(email.sendEmail, emailAddr)
+			))
 			.orderBy(desc(email.emailId))
 			.limit(1)
 			.get();
-
-		if (!emailRow) {
-			emailRow = await orm(c).select().from(email)
-				.where(like(email.recipient, `%${emailAddr}%`))
-				.orderBy(desc(email.emailId))
-				.limit(1)
-				.get();
-		}
-
-		if (!emailRow) {
-			emailRow = await orm(c).select().from(email)
-				.where(eq(email.sendEmail, emailAddr))
-				.orderBy(desc(email.emailId))
-				.limit(1)
-				.get();
-		}
 
 		if (!emailRow || !emailRow.code) {
 			return c.text('Not found', { status: 404 });
