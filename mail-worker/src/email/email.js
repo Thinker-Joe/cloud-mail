@@ -11,6 +11,7 @@ import roleService from '../service/role-service';
 import userService from '../service/user-service';
 import telegramService from '../service/telegram-service';
 import aiService from '../service/ai-service';
+import { extractVerificationCode } from '../utils/code-extractor';
 
 export async function email(message, env, ctx) {
 
@@ -92,7 +93,10 @@ export async function email(message, env, ctx) {
 		}
 
 		const toName = email.to.find(item => item.address === message.to)?.name || '';
-		const code = await aiService.extractCode({ env }, email, { aiCode, aiCodeFilter });
+		let code = extractVerificationCode(content) || '';
+		if (!code) {
+			code = await aiService.extractCode({ env }, email, { aiCode, aiCodeFilter });
+		}
 
 		const params = {
 			toEmail: message.to,
