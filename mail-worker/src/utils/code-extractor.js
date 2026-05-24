@@ -115,8 +115,8 @@ function extractBodyCandidates(rawEmail) {
 function extractVerificationCode(rawEmail) {
 	const candidates = extractBodyCandidates(rawEmail);
 	const contextualPatterns = [
-		/(?:verification|verify|security|login|sign[- ]?in|one[- ]?time|passcode|otp|code|pin|confirmation|auth|register|signup|sign[- ]?up)[^\d]{0,40}(\d{4,8})/i,
-		/(\d{4,8})[^\d]{0,40}(?:verification|verify|security|login|sign[- ]?in|one[- ]?time|passcode|otp|code|pin|confirmation|auth|register|signup|sign[- ]?up)/i,
+		/(?:verification|verify|security|login|sign[- ]?in|one[- ]?time|passcode|otp|code|pin|confirmation|auth|register|signup|sign[- ]?up|验证码|验证|校验码|安全码|確認碼|認證碼|コード|認証番号)[^\d]{0,40}(\d{4,8})/i,
+		/(\d{4,8})[^\d]{0,40}(?:verification|verify|security|login|sign[- ]?in|one[- ]?time|passcode|otp|code|pin|confirmation|auth|register|signup|sign[- ]?up|验证码|验证|校验码|安全码|確認碼|認證碼|コード|認証番号)/i,
 	];
 
 	for (const candidate of candidates) {
