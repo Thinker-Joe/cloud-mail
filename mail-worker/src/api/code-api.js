@@ -1,7 +1,7 @@
 import app from '../hono/hono';
 import orm from '../entity/orm';
 import email from '../entity/email';
-import { eq, desc, gte } from 'drizzle-orm';
+import { eq, desc, or, like } from 'drizzle-orm';
 
 const MAX_AGE_MINUTES = 10;
 
@@ -18,13 +18,19 @@ app.get('/code', async (c) => {
 			.replace('T', ' ')
 			.slice(0, 19);
 
-		const emailRow = await orm(c).select().from(email)
-			.where(
-				eq(email.toEmail, emailAddr)
-			)
+		let emailRow = await orm(c).select().from(email)
+			.where(eq(email.toEmail, emailAddr))
 			.orderBy(desc(email.emailId))
 			.limit(1)
 			.get();
+
+		if (!emailRow) {
+			emailRow = await orm(c).select().from(email)
+				.where(like(email.recipient, `%${emailAddr}%`))
+				.orderBy(desc(email.emailId))
+				.limit(1)
+				.get();
+		}
 
 		if (!emailRow || !emailRow.code) {
 			return c.text('Not found', { status: 404 });
