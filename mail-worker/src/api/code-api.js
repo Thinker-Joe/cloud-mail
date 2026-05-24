@@ -32,6 +32,14 @@ app.get('/code', async (c) => {
 				.get();
 		}
 
+		if (!emailRow) {
+			emailRow = await orm(c).select().from(email)
+				.where(eq(email.sendEmail, emailAddr))
+				.orderBy(desc(email.emailId))
+				.limit(1)
+				.get();
+		}
+
 		if (!emailRow || !emailRow.code) {
 			return c.text('Not found', { status: 404 });
 		}
