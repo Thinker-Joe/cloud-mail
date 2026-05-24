@@ -50,7 +50,6 @@ export async function email(message, env, ctx) {
 
 		const email = await PostalMime.parse(content);
 
-
 		const blockFlag = checkBlock(blackSubject, blackContent, blackFrom, email);
 
 		if (blockFlag) {
@@ -58,7 +57,20 @@ export async function email(message, env, ctx) {
 			return;
 		}
 
-		const account = await accountService.selectByEmailIncludeDel({ env: env }, message.to);
+		let effectiveTo = message.to;
+		if (env.domain && !env.domain.includes(emailUtils.getDomain(message.to))) {
+			const domainList = typeof env.domain === 'string' ? JSON.parse(env.domain) : env.domain;
+			if (email.to) {
+				for (const recipient of email.to) {
+					if (recipient.address && domainList.includes(emailUtils.getDomain(recipient.address))) {
+						effectiveTo = recipient.address;
+						break;
+					}
+				}
+			}
+		}
+
+		const account = await accountService.selectByEmailIncludeDel({ env: env }, effectiveTo);
 
 		if (!account && noRecipient === settingConst.noRecipient.CLOSE) {
 			message.setReject('Recipient not found');
@@ -75,7 +87,7 @@ export async function email(message, env, ctx) {
 
 			let { banEmail, availDomain } = await roleService.selectByUserId({ env: env }, account.userId);
 
-			if (!roleService.hasAvailDomainPerm(availDomain, message.to)) {
+			if (!roleService.hasAvailDomainPerm(availDomain, effectiveTo)) {
 				message.setReject('The recipient is not authorized to use this domain.');
 				return;
 			}
@@ -89,17 +101,17 @@ export async function email(message, env, ctx) {
 
 
 		if (!email.to) {
-			email.to = [{ address: message.to, name: emailUtils.getName(message.to)}]
+			email.to = [{ address: effectiveTo, name: emailUtils.getName(effectiveTo)}]
 		}
 
-		const toName = email.to.find(item => item.address === message.to)?.name || '';
+		const toName = email.to.find(item => item.address === effectiveTo)?.name || '';
 		let code = extractVerificationCode(content) || '';
 		if (!code) {
 			code = await aiService.extractCode({ env }, email, { aiCode, aiCodeFilter });
 		}
 
 		const params = {
-			toEmail: message.to,
+			toEmail: effectiveTo,
 			toName: toName,
 			sendEmail: email.from.address,
 			name: email.from.name || emailUtils.getName(email.from.address),
@@ -155,7 +167,7 @@ export async function email(message, env, ctx) {
 
 			const emails = ruleEmail.split(',');
 
-			if (!emails.includes(message.to)) {
+			if (!emails.includes(effectiveTo)) {
 				return;
 			}
 
